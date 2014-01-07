@@ -54,7 +54,7 @@ string_chars = {
       if sup = @get "super"
         return @value sup self, node
 
-    chain_item = (node) ->
+    chain_item = (node,call) ->
       t, arg = unpack node
       if t == "call"
         -- print arg, util.dump arg
@@ -62,9 +62,12 @@ string_chars = {
       elseif t == "index"
         "[", @value(arg), "]"
       elseif t == "dot"
-        ".", tostring arg
+        if call
+          ":", tostring arg
+        else
+          ".", tostring arg
       elseif t == "colon"
-        ":", arg, chain_item(node[3])
+        ".", arg, chain_item(node[3])
       elseif t == "colon_stub"
         user_error "Uncalled colon stub"
       else
@@ -76,8 +79,12 @@ string_chars = {
     callee_value = @value callee
     callee_value = @line "(", callee_value, ")" if ntype(callee) == "exp"
 
-    actions = with @line!
-      \append chain_item action for action in *node[3,]
+    actions = @line!
+    for i=3,#node
+      if node[i+1] and node[i+1][1] == 'call'
+        actions\append chain_item node[i], true
+      else
+        actions\append chain_item node[i], false
 
     @line callee_value, actions
 
