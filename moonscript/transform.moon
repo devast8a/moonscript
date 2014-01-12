@@ -666,7 +666,7 @@ Statement = Transformer {
                 -- calling super, inject calling name and self into chain
                 when "call"
                   calling_name = block\get"current_block"
-                  slice[1] = {"call", {"self", unpack head[2]}}
+                  slice[1] = {"call__", {"self", unpack head[2]}}
 
                   if ntype(calling_name) == "key_literal"
                     insert new_chain, {"dot", calling_name[2]}

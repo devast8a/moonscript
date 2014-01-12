@@ -56,7 +56,7 @@ string_chars = {
 
     chain_item = (node,call) ->
       t, arg = unpack node
-      if t == "call"
+      if t == "call" or t == "call__"
         -- print arg, util.dump arg
         "(", @values(arg), ")"
       elseif t == "index"
