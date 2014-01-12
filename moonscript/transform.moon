@@ -712,7 +712,7 @@ Statement = Transformer {
         parent_val and .if({
           cond: {"exp", parent_cls_name\chain "__inherited" }
           then: {
-            parent_cls_name\chain "__inherited", {"call", {
+            parent_cls_name\chain "__inherited", {"call__", {
               parent_cls_name, cls_name
             }}
           }
