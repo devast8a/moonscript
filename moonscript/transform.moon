@@ -124,6 +124,7 @@ class Transformer
 
   transform: (scope, node, ...) =>
     return node if @seen_nodes[node]
+
     @seen_nodes[node] = true
     while true
       transformer = @transformers[ntype node]
@@ -131,8 +132,10 @@ class Transformer
         transformer(scope, node, ...) or node
       else
         node
+
       return node if res == node
       node = res
+
     node
 
   bind: (scope) =>
@@ -173,17 +176,24 @@ Statement = Transformer {
     apply_to_last body, implicitly_return @
 
   return: (node) =>
-    node[2] = Value\transform_once @, node[2]
+    ret_val = node[2]
+    ret_val_type = ntype ret_val
 
-    if "block_exp" == ntype node[2]
-      block_exp = node[2]
-      block_body = block_exp[2]
+    if ret_val_type == "explist" and #ret_val == 2
+      ret_val = ret_val[2]
+      ret_val_type = ntype ret_val
 
-      idx = #block_body
-      node[2] = block_body[idx]
-      block_body[idx] = node
-      return build.group block_body
+    if types.cascading[ret_val_type]
+      return implicitly_return(@) ret_val
 
+    -- flatten things that create block exp
+    if ret_val_type == "chain" or ret_val_type == "comprehension" or ret_val_type == "tblcomprehension"
+      ret_val = Value\transform_once @, ret_val
+      if ntype(ret_val) == "block_exp"
+        return build.group apply_to_last ret_val[2], (stm)->
+            {"return", stm}
+
+    node[2] = ret_val
     node
 
   declare_glob: (node) =>
@@ -206,6 +216,12 @@ Statement = Transformer {
     if num_names == 1 and num_values == 1
       first_value = values[1]
       first_name = names[1]
+      first_type = ntype first_value
+
+      -- reduce colon stub chain to block exp
+      if first_type == "chain"
+        first_value = Value\transform_once @, first_value
+        first_type = ntype first_value
 
       switch ntype first_value
         when "block_exp"
@@ -220,6 +236,8 @@ Statement = Transformer {
 
         when "comprehension", "tblcomprehension", "foreach", "for", "while"
           return build.assign_one first_name, Value\transform_once @, first_value
+        else
+          values[1] = first_value
 
     -- bubble cascading assigns
     transformed = if num_values == 1
@@ -922,7 +940,7 @@ Value = Transformer {
       fn_name = NameProxy "fn"
 
       is_super = ntype(node[2]) == "ref" and node[2][2] == "super"
-      @transform.value build.block_exp {
+      build.block_exp {
         build.assign {
           names: {base_name}
           values: {node}
