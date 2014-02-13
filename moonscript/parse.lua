@@ -648,13 +648,13 @@ local build_grammar = wrap_env(function()
 	}
 end)
 
+local g = build_grammar()
 return {
 	extract_line = extract_line,
 
 	-- parse a string
 	-- returns tree, or nil and error message
 	string = function (str)
-		local g = build_grammar()
 		return g:match(str)
 	end
 }
