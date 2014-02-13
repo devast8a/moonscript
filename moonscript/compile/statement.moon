@@ -51,7 +51,19 @@ import concat, insert from table
       \append_list [@value v for v in *values], ", "
 
   return: (node) =>
-    @line "return ", if node[2] != "" then @value node[2]
+    if node[2] == ''
+      @line "return "
+    else
+      avoidTailCall = true
+      safelyWrap = true
+
+      if avoidTailCall and node[2][1] == 'chain' or (node[2][1] == 'explist' and node[2][2][1] == 'chain')
+        if safelyWrap
+          @line "local __return __return = {", @value(node[2]), "} return unpack(__return)"
+        else
+          @line "local __return __return = ", @value(node[2]), " return __return"
+      else
+        @line "return ", if node[2] != "" then @value node[2]
 
   break: (node) =>
     "break"
